@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Tweak Examples</title>
+	<script src="Tweak.js"></script>
+
+	<style>
+
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			display: flex;
+			font-family: Arial, sans-serif;
+			font-size: .8em;
+		}
+
+		#nav {
+			width: 15vw;
+			min-width: 150px;
+			padding: 10px;
+			border: 1px solid #c5d3d9;
+			height: 90vh;
+			overflow: auto;
+		}
+
+		#nav > button {
+			display: block;
+			width: 100%;
+			margin: 2px;
+		}
+
+		#holder {
+			width: 80vw;
+			margin-left: 20px;
+			padding: 2px;
+			border: 1px solid #c5d3d9;
+			background: url("bg.png");
+		}
+
+		button {
+			border: 1px solid #c5d3d9;
+			border-radius: 5px;
+			outline: none;
+			background-color: #dcdcdc;
+			cursor: pointer;
+		}
+		button:hover {
+			background-color: #a7c6d3;
+		}
+
+		.btn--selected {
+			background-color: #90b5d3;
+		}
+
+
+		.start {
+			margin-bottom: 15px;
+			padding: 5px;
+		}
+
+		label {
+			margin-right: 10px;
+		}
+
+		#desc {
+			margin-left: 15px;
+			color: #207cb5;
+			display: inline-block;
+			position: absolute;
+			bottom: 10vh;
+		}
+
+
+		.target {
+			position: relative;
+		}
+
+		.box {
+			min-width: 100px;
+			min-height: 50px;
+			background-color: #c9c9b3;
+			padding: 5px;
+			margin: 50px;
+			border: 1px solid #5c5c5c;
+			display: inline-block;
+		}
+
+		.scroll {
+			width: 200px;
+			height: 100px;
+			border: 1px solid #c1c1c1;
+			overflow: auto;
+			background-color: rgba(106, 106, 106, 0.33);
+			margin: 10px;
+			padding: 5px;
+		}
+
+		canvas {
+			background-color: #d7d7d7;
+		}
+
+
+	</style>
+
+
+</head>
+<body>
+<div id="nav"></div>
+<div id="holder">
+	<div class="start">
+		<label>
+			<select id="timeSelect">
+				<option value=".5" selected>.5 sec</option>
+				<option value="1">1 sec</option>
+				<option value="2">2 sec</option>
+				<option value="3">3 sec</option>
+			</select>
+		</label>
+		<label>
+			<select id="easeSelect">
+				<option value="easeInOut" selected>easeInOut</option>
+				<option value="easeIn">easeIn</option>
+				<option value="easeOut">easeOut</option>
+				<option value="linear">linear</option>
+				<option value="easeInOutCubic">easeInOutCubic</option>
+				<option value="easeInCubic">easeInCubic</option>
+				<option value="easeOutCubic">easeOutCubic</option>
+				<option value="easeInOutExpo">easeInOutExpo</option>
+				<option value="easeInExpo">easeInExpo</option>
+				<option value="easeOutExpo">easeOutExpo</option>
+				<option value="easeOutElastic">easeOutElastic</option>
+				<option value="easeOutBounce">easeOutBounce</option>
+				<option value="easeInOutBack">easeInOutBack</option>
+				<option value="easeInBack">easeInBack</option>
+				<option value="easeOutBack">easeOutBack</option>
+			</select>
+		</label>
+		<button id="btnStart">Start</button>
+	</div>
+	<div id="main"></div>
+	<span id="desc"></span>
+</div>
+
+<script>
+
+	window.onload = function () {
+
+		var nav = document.querySelector("#nav");
+		var holder = document.querySelector("#holder");
+		var main = document.querySelector("#main");
+		var timeSelect = document.querySelector("#timeSelect");
+		var easeSelect = document.querySelector("#easeSelect");
+		var desc = document.querySelector("#desc");
+		var animationId = 0;
+
+		var isRunning = false;
+
+		var obj_1 = "<div class='box target'>Hello, world!</div>";
+
+		var ss = "";
+		for (var i = 0; i < 50; i++) {
+			ss += "<div>" + i + " hello, world!</div>";
+		}
+		var obj_2 = "<div class='scroll target'>" + ss + "</div>";
+
+		var obj_canvas = "<canvas class='c target'></canvas>";
+
+		var content = [
+			"CSS Common",
+			{
+				name: "size",
+				div: obj_1,
+				f: [{prop:"width", to:"300px"}, {prop:"height", to:"80px"}]
+			},
+			{
+				name: "font-size",
+				div: obj_1,
+				f: [{prop:"font-size", from: "1em", to:"2em"}]
+			},
+			{
+				name: "margin",
+				div: obj_1,
+				f: [{prop:"margin-left", to:"20em"}]
+			},
+			{
+				name: "border",
+				div: obj_1,
+				f: [{prop:"border-width", to:"15px"}]
+			},
+			{
+				name: "scroll to value",
+				div: obj_2,
+				f: [{prop:"scrollTop", to:"250px"}]
+			},
+			{
+				name: "scroll to element",
+				div: obj_2,
+				f: '[{prop:"scrollTop", to: myElement}]',
+				func: scrollToObj
+			},
+
+			"Colours",
+			{
+				name: "color",
+				div: obj_1,
+				f: [{prop:"color", to:"#ff0000"}]
+			},
+			{
+				name: "background-color",
+				div: obj_1,
+				f: [{prop:"background-color", to:"rgba(100,200,30,.5)"}]
+			},
+			{
+				name: "opacity",
+				div: obj_1,
+				f: [{prop:"opacity", to:0}]
+			},
+			"Transforms",
+			{
+				name: "rotation",
+				div: obj_1,
+				f: [{prop:"rotateZ", to:360}]
+			},
+			{
+				name: "size",
+				div: obj_1,
+				f: [{prop:"scaleX", to:2}, {prop:"scaleY", to:2}]
+			},
+			{
+				name: "skew",
+				div: obj_1,
+				f: [{prop:"skewX", to:-30}]
+			},
+			{
+				name: "translate",
+				div: obj_1,
+				f: [{prop:"translateX", to:"100%"}, {prop:"translateY", to:"10em"}]
+			},
+			"Misc",
+			{
+				name: "sequence",
+				div: obj_1,
+				f: 'T._(obj, .5, [{prop:"translateX", to:"300%"}])._(1, [{prop:"rotateZ", to:360}])._(1, [{prop:"background-color", to:"#cc9933"}]);',
+				func:chain_1
+			},
+			{
+				name: "repeat/delay",
+				div: obj_1,
+				f: 'T._(obj, .5, [{prop:"rotateZ", to:360}], {repeat:2})._(1, [{prop:"translateX", to:"300%"}, {prop:"background-color", to:"rgba(255,30,30, 1)"}], {delay:.5});',
+				func:repeat_delay
+			},
+			{
+				name: "canvas",
+				div: obj_canvas,
+				f: '',
+				func:canvas_anim
+			}
+
+		];
+
+		function buildMenu() {
+
+			var arr = [];
+			for (var i = 0; i < content.length; i++) {
+				var o = content[i];
+				if (typeof o === "string") {
+					arr.push("<div class='nav-title'>", o, "</div>");
+				} else {
+					arr.push("<button data-type='btn' data-id='", i, "'>", o.name, "</button>");
+				}
+
+			}
+
+			nav.innerHTML = arr.join("");
+
+			nav.addEventListener("click", navHandler);
+			document.querySelector("#btnStart").addEventListener("click", startHandler);
+
+		}
+
+
+		function navHandler(e) {
+
+			var type = e.target.getAttribute("data-type");
+
+			if (type === "btn") {
+				isRunning = false;
+				T.setManualUpdate(false);
+				T.killAll();
+				var sel = nav.querySelector(".btn--selected");
+				if (sel) sel.classList.remove("btn--selected");
+				e.target.classList.add("btn--selected");
+				var num = parseInt(e.target.getAttribute("data-id"));
+				setsScene(num);
+			}
+		}
+
+		function setsScene(num) {
+			animationId = num;
+			var f = content[animationId].f;
+			if (typeof f === "object") {
+				desc.textContent = JSON.stringify(f);
+			} else {
+				desc.textContent = f;
+			}
+			var cont = content[num];
+			buildAnimation(cont);
+		}
+
+		function startHandler(){
+			setsScene(animationId);
+			if (! content[animationId].func) {
+				var f = content[animationId].f;
+				var obj = main.querySelector(".target");
+				var t = parseFloat(timeSelect.value);
+				var ease = easeSelect.value;
+				T._(obj, t, f, {ease:T[ease]});
+			} else {
+				content[animationId].func();
+			}
+		}
+
+
+
+		function scrollToObj(){
+			var obj = main.querySelector(".target");
+			var t = parseFloat(timeSelect.value);
+			var el = obj.children[20];
+			el.style.backgroundColor = "rgba(255, 0, 0, .5)";
+			T._(obj, t, [{prop:"scrollTop", to:el}]);
+		}
+
+		function chain_1() {
+			var obj = main.querySelector(".box");
+			var t = parseFloat(timeSelect.value);
+			T._(obj, .5, [{prop:"translateX", to:"300%"}])._(1, [{prop:"rotateZ", to:360}])._(1, [{prop:"background-color", to:"#cc9933"}]);
+		}
+
+		function repeat_delay() {
+			var obj = main.querySelector(".box");
+			var t = parseFloat(timeSelect.value);
+			T._(obj, .5, [{prop:"rotateZ", to:360}], {repeat:2})._(1, [{prop:"translateX", to:"300%"}, {prop:"background-color", to:"rgba(255,30,30, 1)"}], {delay:.5});
+		}
+
+
+		function canvas_anim() {
+			T.killAll();
+			T.setManualUpdate(true);
+			isRunning = true;
+
+
+			var c = main.querySelector(".c");
+			var ctx = c.getContext("2d");
+			//ctx.fillStyle = "rgba(0,0,0, .5)";
+
+			var w = c.width;
+			var h = c.height;
+
+			function Obj(x, y, s) {
+				this.x = x || 0;
+				this.y = y || 0;
+				this.s = s || 10;
+			}
+
+			var len = 500;
+
+			var arr = [];
+			for (var i = 0; i < len; i++) {
+				var s = Math.random()*4 + 2;
+				var o = new Obj(w/2,h/2, s);
+				arr.push(o);
+				getTweak([o]);
+			}
+
+
+			function getTweak(args) {
+				var x = Math.random()*w;
+				var y = Math.random()*h;
+				var t = Math.random()*2 + 1.6;
+				T._(args[0] || this.obj, t, [{prop:"x", to:x}, {prop:"y", to:y}], {call:getTweak, callArgs:args[0] || this.obj});
+			}
+
+
+			function run() {
+
+				ctx.clearRect(0,0,w,h);
+
+				T.update();
+				var o;
+				for (var i = 0; i < len; i++) {
+
+					o = arr[i];
+					ctx.fillRect(o.x, o.y, o.s, o.s);
+				}
+
+				if(isRunning) {
+					requestAnimationFrame(run);
+				}
+			}
+
+			run();
+
+		}
+
+
+
+
+		function buildAnimation(item) {
+			main.innerHTML = item.div;
+		}
+
+
+		buildMenu();
+		setsScene(1);
+
+
+	};
+
+
+</script>
+
+</body>
+</html>

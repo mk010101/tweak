@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Tweak-speed-test</title>
+	<script src="velocity.js"></script>
+	<script src="Tweak.js" async></script>
+	<script src="tweenX.js"></script>
+	<script src="TweenMax.js"></script>
+
+	<style>
+
+		.controls {
+			padding: 10px;
+			border: 1px solid #bdbdbd;
+			margin-bottom: 10px;
+		}
+
+		.d {
+			width: 10px;
+			height: 20px;
+			background-color: #5b5b5b;
+			display: inline-block;
+			position: relative;
+			margin: 1px;
+		}
+
+		.status {
+			margin: 0 10px;
+		}
+
+		label {
+			margin: 0 5px;
+		}
+
+
+	</style>
+
+</head>
+<body>
+<div class="controls">
+	<button id="btnStartTweak">Tweak</button>
+	<button id="btnStartTweenX">TweenX</button>
+	<button id="btnStartVelocity">Velocity</button>
+	<button id="btnStartGsap">GSAP</button>
+	<label>run time: <select id="rTime" title="time"></select></label>
+	<label>num elements: <select id="sel" title="num elements"></select></label>
+	<span class="status" id="initTime"></span>
+	<span class="status" id="runTime"></span>
+	<span class="status" id="totTime"></span>
+</div>
+<div class="d-holder" id="holder"></div>
+
+
+<script>
+
+	window.onload = function() {
+
+		//T.keepWarm(true);
+
+		// 5,000 ~ 1.75 - 1.8sec
+
+		var options = [100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,
+		1800,1900,2000,2200,2500,2700,3000,3500,4000,4500,5000,5500,6000,7000,8000,9000,10000, 11000,
+		12000,13000,14000,15000,18000,20000,25000,30000];
+
+		var rOptions = [.5, 1, 1.5, 2, 3, 5];
+
+		var arr = [];
+		var initTime = 0;
+
+		var tInit = document.getElementById("initTime");
+		var tRun = document.getElementById("runTime");
+		var tTot = document.getElementById("totTime");
+		var sel = document.getElementById("sel");
+		var rTime = document.getElementById("rTime");
+		var holder = document.getElementById("holder");
+
+		var t = 1;
+
+		var opStr = "";
+		for (var i = 0; i < options.length; i++) {
+			var def0 = options[i] === 1000? "selected" : "";
+			opStr += "<option value='" + options[i] + "' " + def0 + ">" + options[i] + "</option>";
+		}
+		sel.innerHTML = opStr;
+
+
+		var rStr = "";
+		for (i = 0; i < rOptions.length; i++) {
+			var def = rOptions[i] === 1? "selected" : "";
+			rStr += "<option value='" + rOptions[i] + "' " + def + ">" + rOptions[i] + "</option>";
+		}
+		rTime.innerHTML = rStr;
+
+		var exeTime = 0;
+
+
+		var numRuns = 0;
+		var func = null;
+		var numEls = 100;
+
+
+		document.querySelector("#btnStartTweak").addEventListener("click", startTweak);
+		document.querySelector("#btnStartTweenX").addEventListener("click", startTweenX);
+		document.querySelector("#btnStartVelocity").addEventListener("click", startVelocity);
+		document.querySelector("#btnStartGsap").addEventListener("click", startGsap);
+
+
+		function clearPrev() {
+			numEls = parseInt(sel.value);
+			t = parseFloat(rTime.value);
+			holder.innerHTML = "";
+			makeElements();
+		}
+
+		function makeElements() {
+			var str = "";
+			for (var i = 0; i < numEls; i++) {
+				str += "<div class='d' style='transform: scaleY(1.4)'></div>"
+			}
+			holder.innerHTML = str;
+			arr = document.querySelectorAll(".d");
+		}
+
+
+		function startTweak(){
+			func = startTweak;
+			clearPrev();
+			var t0 = Date.now();
+			var tweak1 = [{prop:"marginLeft", to:"500px"}];
+			var tweak2 = [{prop:"rotate", to:360}, {prop:"backgroundColor", to:"#3333ff"}];
+			for (var i = 1; i < arr.length; i++) {
+				var obj = arr[i];
+				Tweak._(obj, t, tweak2);
+			}
+			Tweak._(arr[0], t, tweak2, {call:onComplete});
+			initTime = (Date.now() - t0)/1000;
+			showInitTime(initTime);
+			exeTime = Date.now();
+		}
+
+
+
+		function startTweenX(){
+			clearPrev();
+			var t0 = Date.now();
+			var tweak1 = [["s.marginLeft", 500]];
+			var tweak2 = [["t.rotate", 360], ["s.backgroundColor", "rgb(100,0,200)"]];
+			for (var i = 1; i < arr.length; i++) {
+				var obj = arr[i];
+				//Tweak._(obj, 1, [{prop:"rotateZ", to:"360deg"}, {prop:"scaleZ", to:1}]);
+				Tween._(obj, t, tweak2);
+			}
+			Tween._(arr[0], t, tweak2, {call:onComplete});
+			initTime = (Date.now() - t0)/1000;
+			showInitTime(initTime);
+			exeTime = Date.now();
+		}
+
+		function startVelocity(){
+			clearPrev();
+			var t0 = Date.now();
+			var tweak1 = {marginLeft: 500};
+			var tweak2 = {rotateZ:["0deg","360deg"], backgroundColor:"#ff00cc"};
+			for (var i = 1; i < arr.length; i++) {
+				var obj = arr[i];
+				Velocity(obj, tweak2, {duration: t*1000});
+			}
+			Velocity(arr[0], tweak2, {duration: t*1000, complete:onComplete });
+			initTime = (Date.now() - t0)/1000;
+			showInitTime(initTime);
+			exeTime = Date.now();
+		}
+
+
+		function startGsap(){
+			clearPrev();
+			var t0 = Date.now();
+			var tweak2 = {rotation:"+=360", backgroundColor:"#22cc22", ease:Power1.easeInOut};
+			for (var i = 1; i < arr.length; i++) {
+				var obj = arr[i];
+				TweenMax.to(obj, t, tweak2);
+			}
+			TweenMax.to(arr[0], t, {rotation:"+=360", backgroundColor:"#22cc22", ease:Power1.easeInOut, onComplete:onComplete });
+			initTime = (Date.now() - t0)/1000;
+			showInitTime(initTime);
+			exeTime = Date.now();
+		}
+
+
+
+		function showInitTime(time) {
+			tInit.textContent = "init time: " + time.toFixed(2);
+		}
+
+		function showRunTime(time) {
+			tRun.textContent = "run time: " + time.toFixed(2);
+		}
+
+		function showTotTime(time) {
+			tTot.textContent = "total: " + time.toFixed(2);
+		}
+
+
+
+		function onComplete(){
+			var tm = (Date.now() - exeTime)/1000;
+			var tot = initTime + tm;
+			showRunTime(tm);
+
+			showTotTime(tot);
+			numRuns ++;
+
+			//if ()
+
+		}
+
+
+	}
+
+</script>
+
+
+</body>
+</html>
